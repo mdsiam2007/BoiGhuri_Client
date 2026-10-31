@@ -2,20 +2,103 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 40 33% 98%;
+    --foreground: 220 25% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 10%;
+
+    --primary: 158 64% 32%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 25% 92%;
+    --secondary-foreground: 220 25% 15%;
+
+    --muted: 40 20% 93%;
+    --muted-foreground: 220 15% 45%;
+
+    --accent: 38 92% 50%;
+    --accent-foreground: 220 25% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 158 64% 32%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 158 64% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 38 92% 55%;
+    --accent-foreground: 220 25% 10%;
+
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 158 64% 42%;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground transition-colors duration-300;
+  }
+}
+
+/* Custom Swiper Styles */
+.swiper-pagination-bullet-active {
+  background-color: hsl(var(--primary)) !important;
+  width: 24px !important;
+  border-radius: 9999px !important;
+}
+
+.swiper-button-next,
+.swiper-button-prev {
+  color: hsl(var(--primary)) !important;
+  background: rgba(255, 255, 255, 0.7);
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 9999px !important;
+  backdrop-filter: blur(4px);
+}
+
+.dark .swiper-button-next,
+.dark .swiper-button-prev {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.swiper-button-next:after,
+.swiper-button-prev:after {
+  font-size: 18px !important;
+  font-weight: bold;
 }
