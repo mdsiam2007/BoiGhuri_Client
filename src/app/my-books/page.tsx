@@ -22,7 +22,7 @@ import { IBook } from "@/types";
 import { fetchWithAuth } from "@/lib/api";
 import toast from "react-hot-toast";
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
+const SERVER_URL = (process.env.NEXT_PUBLIC_SERVER_URL || "").replace(/\/+$/, "");
 
 export default function MyBooksPage() {
   return (

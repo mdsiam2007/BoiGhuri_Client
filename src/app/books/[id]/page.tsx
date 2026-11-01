@@ -13,7 +13,7 @@ import ReviewSection from "@/components/books/ReviewSection";
 import { IBook } from "@/types";
 import toast from "react-hot-toast";
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
+const SERVER_URL = (process.env.NEXT_PUBLIC_SERVER_URL || "").replace(/\/+$/, "");
 
 export default function BookDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);

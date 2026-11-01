@@ -10,7 +10,7 @@ import BookSkeleton from "@/components/books/BookSkeleton";
 import { useLanguage } from "@/context/LanguageContext";
 import { IBook } from "@/types";
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
+const SERVER_URL = (process.env.NEXT_PUBLIC_SERVER_URL || "").replace(/\/+$/, "");
 
 export default function NewArrivals() {
   const { t } = useLanguage();

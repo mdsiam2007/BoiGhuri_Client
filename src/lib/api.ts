@@ -1,4 +1,5 @@
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
+const rawServerUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+const SERVER_URL = rawServerUrl.replace(/\/+$/, '');
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('boighuri_jwt_token') : null;
@@ -12,7 +13,8 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const url = endpoint.startsWith('http') ? endpoint : `${SERVER_URL}${endpoint}`;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${SERVER_URL}${cleanEndpoint}`;
 
   const response = await fetch(url, {
     ...options,
@@ -52,4 +54,3 @@ export function clearJwtToken() {
     localStorage.removeItem('boighuri_jwt_token');
   }
 }
-

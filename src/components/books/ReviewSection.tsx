@@ -11,7 +11,7 @@ import { fetchWithAuth } from "@/lib/api";
 import { useLanguage } from "@/context/LanguageContext";
 import toast from "react-hot-toast";
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
+const SERVER_URL = (process.env.NEXT_PUBLIC_SERVER_URL || "").replace(/\/+$/, "");
 
 interface ReviewSectionProps {
   bookId: string;

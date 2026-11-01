@@ -11,7 +11,7 @@ import BookSkeleton from "@/components/books/BookSkeleton";
 import { useLanguage } from "@/context/LanguageContext";
 import { IBook, BookCategory } from "@/types";
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
+const SERVER_URL = (process.env.NEXT_PUBLIC_SERVER_URL || "").replace(/\/+$/, "");
 
 const categories: (BookCategory | "All")[] = [
   "All",
