@@ -50,7 +50,7 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
         setAverageRating(data.averageRating || 0);
       }
     } catch (err) {
-      console.error("Failed to load reviews:", err);
+      console.error("Failed to load reviews.:", err);
     } finally {
       setLoading(false);
     }
@@ -123,9 +123,9 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
       if (res.success) {
         toast.success(
           res.message ||
-            (language === "bn"
-              ? "রিভিউ সফলভাবে যুক্ত হয়েছে!"
-              : "Review submitted successfully!"),
+          (language === "bn"
+            ? "রিভিউ সফলভাবে যুক্ত হয়েছে!"
+            : "Review submitted successfully!"),
           { id: toastId }
         );
         setComment("");
@@ -133,7 +133,7 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
       } else {
         toast.error(
           res.message ||
-            (language === "bn" ? "রিভিউ যোগ করা যায়নি" : "Failed to add review"),
+          (language === "bn" ? "রিভিউ যোগ করা যায়নি" : "Failed to add review"),
           { id: toastId }
         );
       }
@@ -142,8 +142,8 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
         err instanceof Error
           ? err.message
           : language === "bn"
-          ? "সমস্যা হয়েছে"
-          : "An error occurred";
+            ? "সমস্যা হয়েছে"
+            : "An error occurred";
       toast.error(msg, { id: toastId });
     } finally {
       setSubmitting(false);
@@ -178,9 +178,9 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
       if (res.success) {
         toast.success(
           res.message ||
-            (language === "bn"
-              ? "রিভিউ সফলভাবে আপডেট করা হয়েছে!"
-              : "Review updated successfully!"),
+          (language === "bn"
+            ? "রিভিউ সফলভাবে আপডেট করা হয়েছে!"
+            : "Review updated successfully!"),
           { id: toastId }
         );
         setEditingReview(null);
@@ -188,7 +188,7 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
       } else {
         toast.error(
           res.message ||
-            (language === "bn" ? "রিভিউ আপডেট করা যায়নি" : "Failed to update review"),
+          (language === "bn" ? "রিভিউ আপডেট করা যায়নি" : "Failed to update review"),
           { id: toastId }
         );
       }
@@ -197,8 +197,8 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
         err instanceof Error
           ? err.message
           : language === "bn"
-          ? "সমস্যা হয়েছে"
-          : "An error occurred";
+            ? "সমস্যা হয়েছে"
+            : "An error occurred";
       toast.error(msg, { id: toastId });
     } finally {
       setUpdating(false);
@@ -231,11 +231,10 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
-                  className={`h-4 w-4 ${
-                    star <= Math.round(averageRating)
+                  className={`h-4 w-4 ${star <= Math.round(averageRating)
                       ? "fill-amber-400 text-amber-400"
                       : "text-muted-foreground/30"
-                  }`}
+                    }`}
                 />
               ))}
             </div>
@@ -286,9 +285,8 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
             {[1, 2, 3, 4, 5].map((s) => (
               <Star
                 key={s}
-                className={`h-4 w-4 ${
-                  s <= userReview.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"
-                }`}
+                className={`h-4 w-4 ${s <= userReview.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"
+                  }`}
               />
             ))}
             <span className="text-xs font-bold text-foreground ml-2">
@@ -356,9 +354,8 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
                   className="p-1 hover:scale-110 transition-transform focus:outline-none cursor-pointer"
                 >
                   <Star
-                    className={`h-6 w-6 ${
-                      s <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"
-                    }`}
+                    className={`h-6 w-6 ${s <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"
+                      }`}
                   />
                 </button>
               ))}
@@ -420,9 +417,8 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
                       className="p-1 hover:scale-110 transition-transform cursor-pointer"
                     >
                       <Star
-                        className={`h-5 w-5 ${
-                          s <= editRating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"
-                        }`}
+                        className={`h-5 w-5 ${s <= editRating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"
+                          }`}
                       />
                     </button>
                   ))}
@@ -453,8 +449,8 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
                       ? "আপডেট হচ্ছে..."
                       : "Updating..."
                     : language === "bn"
-                    ? "সংরক্ষণ করুন"
-                    : "Save Changes"}
+                      ? "সংরক্ষণ করুন"
+                      : "Save Changes"}
                 </Button>
               </div>
             </form>
@@ -504,9 +500,8 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
                     {[1, 2, 3, 4, 5].map((s) => (
                       <Star
                         key={s}
-                        className={`h-3.5 w-3.5 ${
-                          s <= rev.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"
-                        }`}
+                        className={`h-3.5 w-3.5 ${s <= rev.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"
+                          }`}
                       />
                     ))}
                   </div>
