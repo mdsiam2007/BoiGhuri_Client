@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, Menu, X, LogOut, User as UserIcon, PlusCircle, BookMarked, Library } from "lucide-react";
+import { Menu, X, LogOut, PlusCircle, BookMarked, Library, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,7 +13,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ThemeToggle from "@/components/shared/ThemeToggle";
+import LanguageToggle from "@/components/shared/LanguageToggle";
+import ProfileEditModal from "@/components/shared/ProfileEditModal";
 import { useSession, signOut } from "@/lib/auth-client";
+import { useLanguage } from "@/context/LanguageContext";
 import { clearJwtToken } from "@/lib/api";
 import toast from "react-hot-toast";
 
@@ -21,7 +24,9 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  const { t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   const user = session?.user;
 
@@ -29,22 +34,22 @@ export default function Navbar() {
     try {
       await signOut();
       clearJwtToken();
-      toast.success("সফলভাবে লগআউট করা হয়েছে!");
+      toast.success(t.logout);
       router.push("/");
       router.refresh();
     } catch {
-      toast.error("লগআউট করতে সমস্যা হয়েছে");
+      toast.error("Logout failed");
     }
   };
 
   const navLinks = [
-    { name: "হোম (Home)", href: "/" },
-    { name: "সব বই (All Books)", href: "/books" },
+    { name: t.home, href: "/" },
+    { name: t.allBooks, href: "/books" },
     ...(user
       ? [
-          { name: "বই যোগ করুন (Add Book)", href: "/add-book" },
-          { name: "আমার বইসমূহ (My Books)", href: "/my-books" },
-          { name: "ধার করা বই (My Borrows)", href: "/my-borrows" },
+          { name: t.addBook, href: "/add-book" },
+          { name: t.myBooks, href: "/my-books" },
+          { name: t.myBorrows, href: "/my-borrows" },
         ]
       : []),
   ];
@@ -58,18 +63,13 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md transition-colors">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-transform group-hover:scale-105">
-            <BookOpen className="h-5 w-5" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
-              বইঘুরি <span className="text-primary font-normal text-sm">BoiGhuri</span>
-            </span>
-            <span className="text-[10px] text-muted-foreground -mt-1 hidden sm:block">
-              অনলাইন লাইব্রেরি
-            </span>
-          </div>
+        <Link href="/" className="flex items-center gap-2 group py-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/BoiGhuri_horizontal_logo.png"
+            alt="বইঘুরি BoiGhuri Logo"
+            className="h-10 sm:h-11 w-auto object-contain transition-transform group-hover:scale-105"
+          />
         </Link>
 
         {/* Desktop Nav Links */}
@@ -89,12 +89,19 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* Right Action Icons (Auth + Theme + Mobile Menu) */}
-        <div className="flex items-center gap-3">
+        {/* Right Action Icons (Language + Theme + Auth + Mobile Menu) */}
+        <div className="flex items-center gap-2.5">
+          <LanguageToggle />
           <ThemeToggle />
 
-          {/* Auth Section */}
-          {!isPending && (
+          {/* Auth Section with Skeleton Loader */}
+          {isPending ? (
+            <div className="flex items-center gap-2">
+              <div className="skeleton h-9 w-20 rounded-lg hidden sm:block" />
+              <div className="skeleton h-9 w-24 rounded-lg hidden sm:block" />
+              <div className="skeleton h-9 w-9 rounded-full sm:hidden" />
+            </div>
+          ) : (
             <>
               {user ? (
                 <DropdownMenu>
@@ -124,22 +131,30 @@ export default function Navbar() {
                       </p>
                     </div>
 
+                    <DropdownMenuItem
+                      onClick={() => setProfileModalOpen(true)}
+                      className="flex items-center gap-2.5 cursor-pointer"
+                    >
+                      <UserCheck className="h-4 w-4 text-primary" />
+                      <span>{t.profile}</span>
+                    </DropdownMenuItem>
+
                     <DropdownMenuItem asChild>
                       <Link href="/my-books" className="flex items-center gap-2.5">
                         <Library className="h-4 w-4 text-primary" />
-                        <span>আমার বইসমূহ (My Books)</span>
+                        <span>{t.myBooks}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/my-borrows" className="flex items-center gap-2.5">
                         <BookMarked className="h-4 w-4 text-primary" />
-                        <span>ধার করা বই (My Borrows)</span>
+                        <span>{t.myBorrows}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/add-book" className="flex items-center gap-2.5">
                         <PlusCircle className="h-4 w-4 text-primary" />
-                        <span>নতুন বই যোগ করুন</span>
+                        <span>{t.addBook}</span>
                       </Link>
                     </DropdownMenuItem>
 
@@ -147,20 +162,20 @@ export default function Navbar() {
 
                     <DropdownMenuItem
                       onClick={handleLogout}
-                      className="text-destructive focus:bg-destructive/10 focus:text-destructive flex items-center gap-2.5"
+                      className="text-destructive focus:bg-destructive/10 focus:text-destructive flex items-center gap-2.5 cursor-pointer"
                     >
                       <LogOut className="h-4 w-4" />
-                      <span>লগআউট (Logout)</span>
+                      <span>{t.logout}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
                 <div className="hidden sm:flex items-center gap-2">
                   <Button variant="ghost" size="sm" asChild>
-                    <Link href="/login">লগইন (Login)</Link>
+                    <Link href="/login">{t.login}</Link>
                   </Button>
                   <Button size="sm" asChild>
-                    <Link href="/register">রেজিস্টার (Register)</Link>
+                    <Link href="/register">{t.register}</Link>
                   </Button>
                 </div>
               )}
@@ -202,18 +217,30 @@ export default function Navbar() {
             <div className="pt-3 border-t flex flex-col gap-2">
               <Button variant="outline" className="w-full justify-center" asChild>
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                  লগইন (Login)
+                  {t.login}
                 </Link>
               </Button>
               <Button className="w-full justify-center" asChild>
                 <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
-                  রেজিস্টার (Register)
+                  {t.register}
                 </Link>
               </Button>
             </div>
           )}
         </div>
       )}
+      {/* Profile Edit Modal */}
+      {user && (
+        <ProfileEditModal
+          isOpen={profileModalOpen}
+          onClose={() => setProfileModalOpen(false)}
+          currentUser={user}
+          onSuccess={(newName) => {
+            if (user) user.name = newName;
+          }}
+        />
+      )}
     </header>
   );
 }
+
