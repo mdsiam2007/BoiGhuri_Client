@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Search, Filter, BookOpen, Loader2, RefreshCw } from "lucide-react";
+import { Search, BookOpen, Loader2, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import BookCard from "@/components/books/BookCard";
+import BookSkeleton from "@/components/books/BookSkeleton";
+import { useLanguage } from "@/context/LanguageContext";
 import { IBook, BookCategory } from "@/types";
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
 const categories: (BookCategory | "All")[] = [
   "All",
@@ -21,6 +23,15 @@ const categories: (BookCategory | "All")[] = [
 ];
 
 export default function AllBooksPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+      <AllBooksContent />
+    </Suspense>
+  );
+}
+
+function AllBooksContent() {
+  const { t, language } = useLanguage();
   const searchParams = useSearchParams();
   const initialCategory = (searchParams.get("category") as BookCategory) || "All";
 
@@ -32,8 +43,8 @@ export default function AllBooksPage() {
 
   // Dynamic Title
   useEffect(() => {
-    document.title = "BoiGhuri | সব বই (All Books)";
-  }, []);
+    document.title = `BoiGhuri | ${t.allBooks}`;
+  }, [t.allBooks]);
 
   // Fetch books
   useEffect(() => {
@@ -51,7 +62,9 @@ export default function AllBooksPage() {
           url.searchParams.set("sort", sortBy);
         }
 
-        const res = await fetch(url.toString());
+        const res = await fetch(url.toString(), {
+          cache: "no-store",
+        });
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
           setBooks(json.data);
@@ -72,18 +85,18 @@ export default function AllBooksPage() {
 
   return (
     <div className="min-h-screen py-10 sm:py-14 bg-background transition-colors">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <div className="container max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Page Header */}
         <div className="space-y-3 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
             <BookOpen className="h-3.5 w-3.5" />
-            <span>লাইব্রেরি সংগ্রহশালা</span>
+            <span>{t.allBooksHeaderBadge}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-            সকল বই (All Books)
+            {t.allBooksHeaderTitle}
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-            আপনার পছন্দের বিষয় ও লেখকের বই খুঁজুন, বিস্তারিত জানুন এবং প্রয়োজনীয় দিনগুলোর জন্য সহজে ধার নিন।
+            {t.allBooksHeaderDesc}
           </p>
         </div>
 
@@ -94,7 +107,7 @@ export default function AllBooksPage() {
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="বইয়ের নাম বা লেখক দিয়ে খুঁজুন..."
+              placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 bg-background"
@@ -104,17 +117,17 @@ export default function AllBooksPage() {
           {/* Sort Dropdown */}
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">
-              সাজান:
+              {language === "bn" ? "সাজান:" : "Sort By:"}
             </span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="h-10 rounded-lg border border-input bg-background px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="newest">সর্বশেষ যুক্ত (Newest)</option>
-              <option value="oldest">পুরাতন (Oldest)</option>
-              <option value="title_asc">নাম অনুযায়ী (A to Z)</option>
-              <option value="copies">কপি সংখ্যা অনুযায়ী (Most Copies)</option>
+              <option value="newest">{t.sortNewest}</option>
+              <option value="oldest">{t.sortOldest}</option>
+              <option value="title_asc">{language === "bn" ? "শিরোনাম অনুযায়ী" : "Title (A to Z)"}</option>
+              <option value="copies">{t.sortCopiesHigh}</option>
             </select>
           </div>
         </div>
@@ -131,23 +144,24 @@ export default function AllBooksPage() {
                   : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
               }`}
             >
-              {cat === "All" ? "সকল বই (All)" : cat}
+              {cat === "All" ? t.allCategory : cat}
             </button>
           ))}
         </div>
 
-        {/* Books Grid: 3 cards per row on desktop */}
+        {/* Books Grid: 5 cards per row on large screens */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="h-8 w-8 text-primary animate-spin" />
-            <p className="text-sm text-muted-foreground">বই তালিকা প্রস্তুত হচ্ছে...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+            {Array.from({ length: 10 }).map((_, idx) => (
+              <BookSkeleton key={idx} />
+            ))}
           </div>
         ) : books.length > 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6"
           >
             {books.map((book) => (
               <BookCard key={book._id} book={book} />
@@ -157,11 +171,8 @@ export default function AllBooksPage() {
           <div className="text-center py-16 border border-dashed rounded-2xl bg-card">
             <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
             <h3 className="text-lg font-bold text-foreground">
-              কোনো বই খুঁজে পাওয়া যায়নি!
+              {t.noBooksFound}
             </h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
-              অন্য কোনো শিরোনাম বা ক্যাটাগরি দিয়ে চেষ্টা করুন অথবা ফিল্টার রিসেট করুন।
-            </p>
             <Button
               variant="outline"
               size="sm"
@@ -172,7 +183,7 @@ export default function AllBooksPage() {
               className="mt-4 gap-2"
             >
               <RefreshCw className="h-4 w-4" />
-              <span>ফিল্টার রিসেট করুন</span>
+              <span>{t.resetFilters}</span>
             </Button>
           </div>
         )}
@@ -180,3 +191,4 @@ export default function AllBooksPage() {
     </div>
   );
 }
+
