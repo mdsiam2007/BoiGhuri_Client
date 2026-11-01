@@ -13,7 +13,7 @@ import ReviewSection from "@/components/books/ReviewSection";
 import { IBook } from "@/types";
 import toast from "react-hot-toast";
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
 export default function BookDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -36,7 +36,9 @@ function BookDetailsContent({ id }: { id: string }) {
   useEffect(() => {
     async function loadBook() {
       try {
-        const res = await fetch(`${SERVER_URL}/books/${id}`);
+        const res = await fetch(`${SERVER_URL}/books/${id}`, {
+          cache: "no-store",
+        });
         const result = await res.json();
         if (result.success && result.data) {
           setBook(result.data);
@@ -251,3 +253,4 @@ function BookDetailsContent({ id }: { id: string }) {
     </div>
   );
 }
+

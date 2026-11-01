@@ -75,30 +75,85 @@
   }
 }
 
-/* Custom Swiper Styles */
-.swiper-pagination-bullet-active {
-  background-color: hsl(var(--primary)) !important;
-  width: 24px !important;
+/* DaisyUI-style animated shimmer skeleton */
+.skeleton {
+  background-color: hsl(var(--muted));
+  background-image: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-position-x: 180%;
+  animation: skeleton-shimmer 1.5s infinite linear;
+}
+
+.dark .skeleton {
+  background-image: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    background-position-x: -20%;
+  }
+}
+
+/* Custom Swiper Styles - Flat Modern Minimal Design */
+.swiper-pagination-bullet {
+  background: rgba(255, 255, 255, 0.4) !important;
+  opacity: 1 !important;
+  width: 8px !important;
+  height: 8px !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
   border-radius: 9999px !important;
 }
 
+.swiper-pagination-bullet-active {
+  background: #ffffff !important;
+  width: 28px !important;
+  border-radius: 9999px !important;
+}
+
+/* Modern Flat Glass Navigation Buttons */
 .swiper-button-next,
 .swiper-button-prev {
-  color: hsl(var(--primary)) !important;
-  background: rgba(255, 255, 255, 0.7);
-  width: 44px !important;
-  height: 44px !important;
-  border-radius: 9999px !important;
-  backdrop-filter: blur(4px);
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 12px !important; /* Flat modern rounded squircle */
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
 }
 
-.dark .swiper-button-next,
-.dark .swiper-button-prev {
-  background: rgba(15, 23, 42, 0.7);
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  transform: translateY(-2px) !important;
+}
+
+.swiper-button-next:active,
+.swiper-button-prev:active {
+  transform: translateY(0px) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
 }
 
 .swiper-button-next:after,
 .swiper-button-prev:after {
-  font-size: 18px !important;
-  font-weight: bold;
+  font-size: 15px !important;
+  font-weight: 700 !important;
 }

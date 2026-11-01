@@ -1,84 +1,101 @@
 "use client";
 
+import { useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Pagination, Navigation, EffectFade } from "swiper/modules";
+import type { Swiper as SwiperType } from "swiper";
+import { Autoplay, Pagination, EffectFade } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
-import "swiper/css/navigation";
 import "swiper/css/effect-fade";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { BookOpen, ArrowRight, Sparkles, Compass, ShieldCheck } from "lucide-react";
+import {
+  BookOpen,
+  ArrowRight,
+  ArrowLeft,
+  Sparkles,
+  Compass,
+  ShieldCheck,
+  CircleFadingArrowUp,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const slides = [
-  {
-    id: 1,
-    title: "বইয়ের আঙিনায় আপনাকে স্বাগতম",
-    subtitle: "ক্লাসিক ও সমকালীন সাহিত্যের সেরা সংগ্রহ",
-    description:
-      "কালজয়ী ঔপন্যাসিকদের সাহিত্য থেকে শুরু করে আধুনিক বেস্টসেলার—আপনার পছন্দের প্রতিটি বই এখন হাতের নাগালে। ঘরে বসেই ধার নিন পছন্দের বই।",
-    buttonText: "বই খুঁজুন (Browse Books)",
-    badge: "সাহিত্য ও গল্প",
-    icon: Sparkles,
-    bgImage:
-      "https://images.unsplash.com/photo-1507842229451-7f01be777a26?w=1600&auto=format&fit=crop&q=80",
-  },
-  {
-    id: 2,
-    title: "বিজ্ঞানের রোমাঞ্চকর অজানা দিগন্ত",
-    subtitle: "মহাবিশ্ব, প্রযুক্তি ও আবিষ্কারের অন্তহীন পাঠ",
-    description:
-      "কোয়ান্টাম পদার্থবিজ্ঞান থেকে কৃত্রিম বুদ্ধিমত্তা—মানবজাতির জ্ঞান অন্বেষণের রোমাঞ্চকর অভিযানকে বইয়ের পাতায় আবিষ্কার করুন।",
-    buttonText: "বিজ্ঞান গ্রন্থাবলী (Browse Books)",
-    badge: "বিজ্ঞান ও গবেষণা",
-    icon: Compass,
-    bgImage:
-      "https://images.unsplash.com/photo-1532012164546-f432f2e3777f?w=1600&auto=format&fit=crop&q=80",
-  },
-  {
-    id: 3,
-    title: "ইতিহাসের পদচিহ্ন ও সভ্যতার রূপরেখা",
-    subtitle: "অতীতের সত্য থেকে বর্তমানের শিক্ষা",
-    description:
-      "আমাদের রক্তক্ষয়ী মুক্তিযুদ্ধ, প্রাচীন সাম্রাজ্যের উত্থান-পতন আর মহাপুরুষদের জীবনগাথা জানুন প্রাঞ্জল সব ঐতিহাসিক রচনায়।",
-    buttonText: "ইতিহাসের বই (Browse Books)",
-    badge: "ইতিহাস ও ঐতিহ্য",
-    icon: BookOpen,
-    bgImage:
-      "https://images.unsplash.com/photo-1461360370896-922624d12aa1?w=1600&auto=format&fit=crop&q=80",
-  },
-  {
-    id: 4,
-    title: "ছোটদের রঙিন কল্পলোকের আসর",
-    subtitle: "রূপকথা, অ্যাডভেঞ্চার ও শিশুতোষ সাহিত্য",
-    description:
-      "টুনটুনি, ফেলুদা আর উপেন্দ্রকিশোরের মজার রূপকথা—ছোটদের মনন ও সৃজনশীলতা বিকাশে বাছাই করা সব শিশুতোষ বইয়ের সমাহার।",
-    buttonText: "ছোটদের বই (Browse Books)",
-    badge: "শিশু ও কিশোর কর্নার",
-    icon: Sparkles,
-    bgImage:
-      "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=1600&auto=format&fit=crop&q=80",
-  },
-  {
-    id: 5,
-    title: "একটি বই, একটি আলোকিত পৃথিবী",
-    subtitle: "সহজ নিয়ম: বই যুক্ত করুন, ধার নিন এবং ফেরত দিন",
-    description:
-      "বইঘুরি কেবল একটি লাইব্রেরি নয়, এটি একটি সচেতন পাঠক সমাজ। আপনিও যুক্ত হোন আমাদের সঙ্গে, জ্ঞান ছড়িয়ে দিন প্রতিটি প্রাণে।",
-    buttonText: "লাইব্রেরিতে প্রবেশ করুন (Browse Books)",
-    badge: "জ্ঞান বিনিময় প্ল্যাটফর্ম",
-    icon: ShieldCheck,
-    bgImage:
-      "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1600&auto=format&fit=crop&q=80",
-  },
-];
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function HeroSlider() {
+  const { t } = useLanguage();
+  const swiperRef = useRef<SwiperType | null>(null);
+
+  const slides = [
+    {
+      id: 1,
+      title: t.heroTitle1,
+      subtitle: t.heroSubtitle1,
+      description: t.heroDesc1,
+      buttonText: t.heroBtn1,
+      badge: t.heroBadge1,
+      icon: Sparkles,
+      bgImage: "/assets/slide-1.webp",
+    },
+    {
+      id: 2,
+      title: t.heroTitle2,
+      subtitle: t.heroSubtitle2,
+      description: t.heroDesc2,
+      buttonText: t.heroBtn2,
+      badge: t.heroBadge2,
+      icon: Compass,
+      bgImage: "/assets/slide-2.webp",
+    },
+    {
+      id: 3,
+      title: t.heroTitle3,
+      subtitle: t.heroSubtitle3,
+      description: t.heroDesc3,
+      buttonText: t.heroBtn3,
+      badge: t.heroBadge3,
+      icon: BookOpen,
+      bgImage: "/assets/slide-3.webp",
+    },
+    {
+      id: 4,
+      title: t.heroTitle4,
+      subtitle: t.heroSubtitle4,
+      description: t.heroDesc4,
+      buttonText: t.heroBtn4,
+      badge: t.heroBadge4,
+      icon: Sparkles,
+      bgImage: "/assets/slide-4.webp",
+    },
+    {
+      id: 5,
+      title: t.heroTitle5,
+      subtitle: t.heroSubtitle5,
+      description: t.heroDesc5,
+      buttonText: t.heroBtn5,
+      badge: t.heroBadge5,
+      icon: ShieldCheck,
+      bgImage: "/assets/slide-5.webp",
+    },
+    {
+      id: 6,
+      title: t.heroTitle6,
+      subtitle: t.heroSubtitle6,
+      description: t.heroDesc6,
+      buttonText: t.heroBtn6,
+      badge: t.heroBadge6,
+      icon: BookOpen,
+      bgImage: "/assets/slide-6.webp",
+    },
+  ];
+
   return (
-    <section className="relative w-full overflow-hidden bg-slate-900">
+    <section className="relative w-full overflow-hidden bg-slate-900 group/slider">
+      {/* Custom Swiper Instance */}
       <Swiper
-        modules={[Autoplay, Pagination, Navigation, EffectFade]}
+        onBeforeInit={(swiper) => {
+          swiperRef.current = swiper;
+        }}
+        modules={[Autoplay, Pagination, EffectFade]}
         effect="fade"
         speed={1000}
         autoplay={{
@@ -88,7 +105,6 @@ export default function HeroSlider() {
         pagination={{
           clickable: true,
         }}
-        navigation={true}
         loop={true}
         className="h-[520px] sm:h-[580px] lg:h-[640px] w-full"
       >
@@ -144,15 +160,17 @@ export default function HeroSlider() {
                     {slide.description}
                   </motion.p>
 
+                  {/* Slide Action Buttons */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.4 }}
-                    className="pt-2 flex flex-wrap gap-4"
+                    className="pt-3 flex flex-wrap items-center gap-3.5"
                   >
+                    {/* Primary Button */}
                     <Button
                       size="lg"
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-900/50 flex items-center gap-2 transition-all hover:scale-105"
+                      className="bg-white text-slate-900 hover:bg-emerald-400 hover:text-slate-950 font-semibold rounded-xl h-12 px-6 flex items-center gap-2.5 transition-all active:scale-95 shadow-sm"
                       asChild
                     >
                       <Link href="/books">
@@ -160,13 +178,18 @@ export default function HeroSlider() {
                         <ArrowRight className="h-4 w-4" />
                       </Link>
                     </Button>
+
+                    {/* Secondary Button with CircleFadingArrowUp */}
                     <Button
-                      size="lg"
                       variant="outline"
-                      className="border-white/30 text-white hover:bg-white/10 rounded-xl backdrop-blur-sm"
+                      size="lg"
+                      className="border-white/25 bg-white/10 hover:bg-white hover:text-slate-900 hover:border-white text-white font-medium rounded-xl h-12 px-6 backdrop-blur-md transition-all active:scale-95 flex items-center gap-2"
                       asChild
                     >
-                      <Link href="/add-book">বই যোগ করুন</Link>
+                      <Link href="/add-book">
+                        <CircleFadingArrowUp className="h-4 w-4" />
+                        <span>{t.heroAddBtn}</span>
+                      </Link>
                     </Button>
                   </motion.div>
                 </div>
@@ -175,6 +198,29 @@ export default function HeroSlider() {
           );
         })}
       </Swiper>
+
+      {/* Modern Custom Navigation Buttons with ArrowLeft & ArrowRight */}
+      <div className="hidden sm:flex absolute right-6 sm:right-10 lg:right-16 bottom-10 z-20 items-center gap-2.5">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => swiperRef.current?.slidePrev()}
+          className="h-11 w-11 rounded-xl bg-white/10 hover:bg-white hover:text-slate-900 border-white/20 text-white backdrop-blur-md transition-all active:scale-95 cursor-pointer shadow-lg"
+          aria-label="Previous Slide"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => swiperRef.current?.slideNext()}
+          className="h-11 w-11 rounded-xl bg-white/10 hover:bg-white hover:text-slate-900 border-white/20 text-white backdrop-blur-md transition-all active:scale-95 cursor-pointer shadow-lg"
+          aria-label="Next Slide"
+        >
+          <ArrowRight className="h-5 w-5" />
+        </Button>
+      </div>
     </section>
   );
 }

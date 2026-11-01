@@ -1,24 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, User, Mail, Lock, Image as ImageIcon, Loader2, Check, AlertCircle } from "lucide-react";
+import {
+  User,
+  Mail,
+  Lock,
+  Camera,
+  Loader2,
+  Check,
+  AlertCircle,
+  Upload,
+  X,
+  Link as LinkIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { signUp, signIn } from "@/lib/auth-client";
+import { uploadImageToCloud } from "@/lib/imageUpload";
+import { syncJwtToken } from "@/lib/api";
+import { useLanguage } from "@/context/LanguageContext";
 import toast from "react-hot-toast";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t, language } = useLanguage();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [photoURL, setPhotoURL] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [showUrlInput, setShowUrlInput] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    document.title = language === "bn" ? "বইঘুরি | রেজিস্ট্রেশন" : "BoiGhuri | Register";
+  }, [language]);
 
   // Password validation checks
   const hasUpperCase = /[A-Z]/.test(password);
@@ -26,30 +49,100 @@ export default function RegisterPage() {
   const isLengthValid = password.length >= 6;
   const isPasswordValid = hasUpperCase && hasLowerCase && isLengthValid;
 
+  // Direct profile picture upload handler
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error(
+        language === "bn"
+          ? "অনুগ্রহ করে একটি সঠিক ছবি নির্বাচন করুন (JPG, PNG, WEBP)"
+          : "Please select a valid image file (JPG, PNG, WEBP)"
+      );
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(
+        language === "bn"
+          ? "ছবির সাইজ সর্বোচ্চ ৫ মেগাবাইট হতে পারে"
+          : "Image size must be less than 5MB"
+      );
+      return;
+    }
+
+    // Immediate local preview
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewImage(objectUrl);
+    setUploadingImage(true);
+
+    try {
+      const uploadedUrl = await uploadImageToCloud(file);
+      setPhotoURL(uploadedUrl);
+      toast.success(t.photoUploadSuccess);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t.photoUploadFailed;
+      toast.error(msg);
+      // Keep local preview if upload fails but allow user to re-try or provide URL
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setPreviewImage(null);
+    setPhotoURL("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
     if (!name || !email || !password) {
-      setErrorMsg("নাম, ইমেইল এবং পাসওয়ার্ড আবশ্যক!");
-      toast.error("সকল আবশ্যকীয় তথ্য পূরণ করুন");
+      const msg =
+        language === "bn"
+          ? "নাম, ইমেইল এবং পাসওয়ার্ড আবশ্যক!"
+          : "Name, email and password are required!";
+      setErrorMsg(msg);
+      toast.error(msg);
       return;
     }
 
     // Strict password validation
     if (!hasUpperCase) {
-      setErrorMsg("পাসওয়ার্ডে অবশ্যই অন্তত একটি বড় হাতের অক্ষর (A-Z) থাকতে হবে!");
-      toast.error("পাসওয়ার্ডে অন্তত একটি বড় হাতের অক্ষর দিন");
+      const msg =
+        language === "bn"
+          ? "পাসওয়ার্ডে অবশ্যই অন্তত একটি বড় হাতের অক্ষর (A-Z) থাকতে হবে!"
+          : "Password must contain at least one uppercase letter (A-Z)!";
+      setErrorMsg(msg);
+      toast.error(msg);
       return;
     }
     if (!hasLowerCase) {
-      setErrorMsg("পাসওয়ার্ডে অবশ্যই অন্তত একটি ছোট হাতের অক্ষর (a-z) থাকতে হবে!");
-      toast.error("পাসওয়ার্ডে অন্তত একটি ছোট হাতের অক্ষর দিন");
+      const msg =
+        language === "bn"
+          ? "পাসওয়ার্ডে অবশ্যই অন্তত একটি ছোট হাতের অক্ষর (a-z) থাকতে হবে!"
+          : "Password must contain at least one lowercase letter (a-z)!";
+      setErrorMsg(msg);
+      toast.error(msg);
       return;
     }
     if (!isLengthValid) {
-      setErrorMsg("পাসওয়ার্ডের দৈর্ঘ্য ন্যূনতম ৬ ক্যারেক্টার হতে হবে!");
-      toast.error("পাসওয়ার্ড ন্যূনতম ৬ অক্ষরের হতে হবে");
+      const msg =
+        language === "bn"
+          ? "পাসওয়ার্ডের দৈর্ঘ্য ন্যূনতম ৬ ক্যারেক্টার হতে হবে!"
+          : "Password must be at least 6 characters long!";
+      setErrorMsg(msg);
+      toast.error(msg);
+      return;
+    }
+
+    if (uploadingImage) {
+      toast.loading(t.uploadingPhoto);
       return;
     }
 
@@ -60,19 +153,31 @@ export default function RegisterPage() {
         name,
         email,
         password,
-        image: photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80",
+        image:
+          photoURL ||
+          "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80",
       });
 
       if (res?.error) {
-        const msg = res.error.message || "রেজিস্ট্রেশন ব্যর্থ হয়েছে! পুনরায় চেষ্টা করুন।";
+        const msg = res.error.message || t.registerFailed;
         setErrorMsg(msg);
         toast.error(msg);
       } else {
-        toast.success("অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! অনুগ্রহ করে লগইন করুন।");
-        router.push("/login");
+        // Sync JWT token with backend since BetterAuth automatically establishes active session on registration
+        await syncJwtToken({
+          email,
+          name,
+          image:
+            photoURL ||
+            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80",
+        });
+
+        toast.success(t.registerSuccess);
+        router.push("/");
+        router.refresh();
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "রেজিস্ট্রেশন করতে সমস্যা হয়েছে";
+      const msg = err instanceof Error ? err.message : t.registerFailed;
       setErrorMsg(msg);
       toast.error(msg);
     } finally {
@@ -87,7 +192,11 @@ export default function RegisterPage() {
         callbackURL: "/",
       });
     } catch {
-      toast.error(`${provider} লগইন চালু করতে সমস্যা হয়েছে`);
+      toast.error(
+        language === "bn"
+          ? `${provider} লগইন চালু করতে সমস্যা হয়েছে`
+          : `Failed to initiate ${provider} login`
+      );
     }
   };
 
@@ -97,25 +206,28 @@ export default function RegisterPage() {
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <Link href="/" className="inline-flex items-center gap-2 group">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md transition-transform group-hover:scale-105">
-              <BookOpen className="h-6 w-6" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/assets/BoiGhuri_horizontal_logo.png"
+              alt="BoiGhuri Logo"
+              className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+            />
           </Link>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            নতুন অ্যাকাউন্ট তৈরি করুন
+            {t.registerTitle}
           </h1>
           <p className="text-sm text-muted-foreground">
-            বইঘুরি পরিবারে যুক্ত হতে নিচের তথ্যগুলো পূরণ করুন
+            {t.registerSubtitle}
           </p>
         </div>
 
         <Card className="border border-border/80 shadow-lg">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-xl font-bold text-center">
-              রেজিস্ট্রেশন (Register)
+              {t.registerCardTitle}
             </CardTitle>
             <CardDescription className="text-center text-xs">
-              বই ধার নেওয়া এবং লাইব্রেরির সকল সুবিধা পেতে নিবন্ধন করুন
+              {t.registerCardDesc}
             </CardDescription>
           </CardHeader>
 
@@ -128,16 +240,111 @@ export default function RegisterPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Profile Picture Direct Upload Section */}
+              <div className="flex flex-col items-center justify-center space-y-2.5 pb-2">
+                <div className="relative group">
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative h-20 w-20 rounded-full border-2 border-dashed border-primary/40 hover:border-primary cursor-pointer overflow-hidden bg-muted flex items-center justify-center transition-all shadow-inner"
+                  >
+                    {previewImage || photoURL ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={previewImage || photoURL}
+                        alt="Profile Preview"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center text-muted-foreground group-hover:text-primary transition-colors">
+                        <Camera className="h-7 w-7" />
+                        <span className="text-[10px] mt-0.5 font-medium">
+                          {t.uploadPhoto}
+                        </span>
+                      </div>
+                    )}
+
+                    {uploadingImage && (
+                      <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center backdrop-blur-xs">
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                        <span className="text-[9px] font-semibold text-primary mt-1">
+                          {t.uploadingPhoto}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Direct upload trigger button / Remove photo button */}
+                  {previewImage || photoURL ? (
+                    <button
+                      type="button"
+                      onClick={handleRemovePhoto}
+                      className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-1 shadow hover:bg-destructive/90 transition-transform active:scale-95"
+                      title={t.removePhoto}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  ) : null}
+                </div>
+
+                {/* Hidden File Input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  onChange={handleImageFileChange}
+                  className="hidden"
+                />
+
+                <div className="flex items-center gap-3 text-xs">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="h-8 text-xs flex items-center gap-1.5"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    <span>{previewImage || photoURL ? t.changePhoto : t.uploadPhoto}</span>
+                  </Button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowUrlInput(!showUrlInput)}
+                    className="text-muted-foreground hover:text-foreground text-[11px] underline flex items-center gap-1"
+                  >
+                    <LinkIcon className="h-3 w-3" />
+                    <span>{t.orUrl}</span>
+                  </button>
+                </div>
+
+                {/* Optional direct URL input fallback */}
+                {showUrlInput && (
+                  <div className="w-full pt-1.5 animate-in fade-in duration-200">
+                    <Input
+                      type="url"
+                      placeholder="https://example.com/avatar.jpg"
+                      value={photoURL}
+                      onChange={(e) => {
+                        setPhotoURL(e.target.value);
+                        setPreviewImage(e.target.value);
+                      }}
+                      className="text-xs h-8"
+                    />
+                  </div>
+                )}
+              </div>
+
               {/* Name */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">
-                  আপনার পূর্ণ নাম
+                  {t.fullNameLabel}
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="text"
-                    placeholder="উদাঃ রহিম আহমেদ"
+                    placeholder={t.fullNamePlaceholder}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="pl-9"
@@ -149,13 +356,13 @@ export default function RegisterPage() {
               {/* Email */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">
-                  ইমেইল অ্যাড্রেস
+                  {t.emailLabel}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="email"
-                    placeholder="name@example.com"
+                    placeholder={t.emailPlaceholder}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-9"
@@ -164,33 +371,16 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Photo URL */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">
-                  প্রোফাইল ছবির লিঙ্ক (Photo URL)
-                </label>
-                <div className="relative">
-                  <ImageIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="url"
-                    placeholder="https://example.com/avatar.jpg"
-                    value={photoURL}
-                    onChange={(e) => setPhotoURL(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-
               {/* Password */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">
-                  পাসওয়ার্ড
+                  {t.passwordLabel}
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="password"
-                    placeholder="কমপক্ষে ৬ ক্যারেক্টার (বড় ও ছোট অক্ষর সহ)"
+                    placeholder={t.passwordPlaceholder}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-9"
@@ -201,20 +391,20 @@ export default function RegisterPage() {
                 {/* Password Criteria Checklist */}
                 {password.length > 0 && (
                   <div className="p-3 bg-muted/60 rounded-lg space-y-1.5 text-xs border">
-                    <p className="font-semibold text-muted-foreground">পাসওয়ার্ডের শর্তাবলী:</p>
+                    <p className="font-semibold text-muted-foreground">{t.passwordReqTitle}</p>
                     <div className="flex items-center gap-1.5">
-                      <span className={isLengthValid ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}>
-                        {isLengthValid ? <Check className="h-3.5 w-3.5 inline" /> : "•"} ন্যূনতম ৬টি ক্যারেক্টার
+                      <span className={isLengthValid ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-muted-foreground"}>
+                        {isLengthValid ? <Check className="h-3.5 w-3.5 inline text-emerald-500" /> : "•"} {t.passMinLength}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className={hasUpperCase ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}>
-                        {hasUpperCase ? <Check className="h-3.5 w-3.5 inline" /> : "•"} অন্তত একটি বড় হাতের অক্ষর (A-Z)
+                      <span className={hasUpperCase ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-muted-foreground"}>
+                        {hasUpperCase ? <Check className="h-3.5 w-3.5 inline text-emerald-500" /> : "•"} {t.passUpper}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className={hasLowerCase ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}>
-                        {hasLowerCase ? <Check className="h-3.5 w-3.5 inline" /> : "•"} অন্তত একটি ছোট হাতের অক্ষর (a-z)
+                      <span className={hasLowerCase ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-muted-foreground"}>
+                        {hasLowerCase ? <Check className="h-3.5 w-3.5 inline text-emerald-500" /> : "•"} {t.passLower}
                       </span>
                     </div>
                   </div>
@@ -223,16 +413,16 @@ export default function RegisterPage() {
 
               <Button
                 type="submit"
-                disabled={loading || (password.length > 0 && !isPasswordValid)}
+                disabled={loading || uploadingImage || (password.length > 0 && !isPasswordValid)}
                 className="w-full font-semibold rounded-lg shadow-sm"
               >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    নিবন্ধন হচ্ছে...
+                    {t.registering}
                   </>
                 ) : (
-                  "রেজিস্টার করুন (Register)"
+                  t.registerBtn
                 )}
               </Button>
             </form>
@@ -243,7 +433,7 @@ export default function RegisterPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground">
-                  অথবা সোশ্যাল সাইনআপ
+                  {t.orSocial}
                 </span>
               </div>
             </div>
@@ -291,12 +481,12 @@ export default function RegisterPage() {
             </div>
 
             <div className="text-center text-xs text-muted-foreground pt-2">
-              ইতিমধ্যে অ্যাকাউন্ট আছে?{" "}
+              {t.haveAccount}{" "}
               <Link
                 href="/login"
                 className="font-semibold text-primary hover:underline"
               >
-                এখানে লগইন করুন (Login)
+                {t.loginHere}
               </Link>
             </div>
           </CardContent>

@@ -2,15 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Star, MessageSquare, Edit3, Check, Loader2, User as UserIcon } from "lucide-react";
+import { Star, MessageSquare, Edit3, Check, Loader2, User as UserIcon, BookOpenCheck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { IReview, IUser } from "@/types";
+import { IReview, IUser, IBorrow } from "@/types";
 import { fetchWithAuth } from "@/lib/api";
+import { useLanguage } from "@/context/LanguageContext";
 import toast from "react-hot-toast";
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
 interface ReviewSectionProps {
   bookId: string;
@@ -18,9 +19,14 @@ interface ReviewSectionProps {
 }
 
 export default function ReviewSection({ bookId, currentUser }: ReviewSectionProps) {
+  const { language } = useLanguage();
   const [reviews, setReviews] = useState<IReview[]>([]);
   const [averageRating, setAverageRating] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+
+  // Borrow check state
+  const [hasBorrowed, setHasBorrowed] = useState<boolean | null>(null);
+  const [checkingBorrow, setCheckingBorrow] = useState<boolean>(false);
 
   // New Review Form State
   const [rating, setRating] = useState<number>(5);
@@ -35,7 +41,9 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
 
   const fetchReviews = useCallback(async () => {
     try {
-      const res = await fetch(`${SERVER_URL}/reviews?bookId=${bookId}`);
+      const res = await fetch(`${SERVER_URL}/reviews?bookId=${bookId}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setReviews(data.data);
@@ -48,9 +56,37 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
     }
   }, [bookId]);
 
+  // Check if current user has borrowed this book
+  const checkBorrowStatus = useCallback(async () => {
+    if (!currentUser) {
+      setHasBorrowed(false);
+      return;
+    }
+
+    setCheckingBorrow(true);
+    try {
+      const res = await fetchWithAuth("/borrows");
+      if (res.success && Array.isArray(res.data)) {
+        const borrowed = res.data.some(
+          (b: IBorrow) =>
+            b.bookId === bookId ||
+            (typeof b.bookId === "object" && (b.bookId as { _id?: string })?._id === bookId)
+        );
+        setHasBorrowed(borrowed);
+      } else {
+        setHasBorrowed(false);
+      }
+    } catch {
+      setHasBorrowed(false);
+    } finally {
+      setCheckingBorrow(false);
+    }
+  }, [currentUser, bookId]);
+
   useEffect(() => {
     fetchReviews();
-  }, [fetchReviews]);
+    checkBorrowStatus();
+  }, [fetchReviews, checkBorrowStatus]);
 
   // Check if current user has already reviewed
   const userReview = currentUser
@@ -61,12 +97,18 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
     e.preventDefault();
 
     if (!comment.trim()) {
-      toast.error("অনুগ্রহ করে আপনার মূল্যবান মতামত লিখুন");
+      toast.error(
+        language === "bn"
+          ? "অনুগ্রহ করে আপনার মূল্যবান মতামত লিখুন"
+          : "Please write your review comment"
+      );
       return;
     }
 
     setSubmitting(true);
-    const toastId = toast.loading("রিভিউ জমা দেওয়া হচ্ছে...");
+    const toastId = toast.loading(
+      language === "bn" ? "রিভিউ জমা দেওয়া হচ্ছে..." : "Submitting review..."
+    );
 
     try {
       const res = await fetchWithAuth("/reviews", {
@@ -79,14 +121,29 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
       });
 
       if (res.success) {
-        toast.success(res.message || "রিভিউ সফলভাবে যুক্ত হয়েছে!", { id: toastId });
+        toast.success(
+          res.message ||
+            (language === "bn"
+              ? "রিভিউ সফলভাবে যুক্ত হয়েছে!"
+              : "Review submitted successfully!"),
+          { id: toastId }
+        );
         setComment("");
         fetchReviews();
       } else {
-        toast.error(res.message || "রিভিউ যোগ করা যায়নি", { id: toastId });
+        toast.error(
+          res.message ||
+            (language === "bn" ? "রিভিউ যোগ করা যায়নি" : "Failed to add review"),
+          { id: toastId }
+        );
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "সমস্যা হয়েছে";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : language === "bn"
+          ? "সমস্যা হয়েছে"
+          : "An error occurred";
       toast.error(msg, { id: toastId });
     } finally {
       setSubmitting(false);
@@ -98,12 +155,16 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
     if (!editingReview) return;
 
     if (!editComment.trim()) {
-      toast.error("মন্তব্য খালি রাখা যাবে না");
+      toast.error(
+        language === "bn" ? "মন্তব্য খালি রাখা যাবে না" : "Comment cannot be empty"
+      );
       return;
     }
 
     setUpdating(true);
-    const toastId = toast.loading("রিভিউ আপডেট করা হচ্ছে...");
+    const toastId = toast.loading(
+      language === "bn" ? "রিভিউ আপডেট করা হচ্ছে..." : "Updating review..."
+    );
 
     try {
       const res = await fetchWithAuth(`/reviews/${editingReview._id}`, {
@@ -115,14 +176,29 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
       });
 
       if (res.success) {
-        toast.success(res.message || "রিভিউ সফলভাবে আপডেট করা হয়েছে!", { id: toastId });
+        toast.success(
+          res.message ||
+            (language === "bn"
+              ? "রিভিউ সফলভাবে আপডেট করা হয়েছে!"
+              : "Review updated successfully!"),
+          { id: toastId }
+        );
         setEditingReview(null);
         fetchReviews();
       } else {
-        toast.error(res.message || "রিভিউ আপডেট করা যায়নি", { id: toastId });
+        toast.error(
+          res.message ||
+            (language === "bn" ? "রিভিউ আপডেট করা যায়নি" : "Failed to update review"),
+          { id: toastId }
+        );
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "সমস্যা হয়েছে";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : language === "bn"
+          ? "সমস্যা হয়েছে"
+          : "An error occurred";
       toast.error(msg, { id: toastId });
     } finally {
       setUpdating(false);
@@ -136,10 +212,16 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
         <div>
           <h3 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <MessageSquare className="h-6 w-6 text-primary" />
-            <span>পাঠকদের রিভিউ ও মতামত ({reviews.length})</span>
+            <span>
+              {language === "bn"
+                ? `পাঠকদের রিভিউ ও মতামত (${reviews.length})`
+                : `Reader Reviews (${reviews.length})`}
+            </span>
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
-            বইটি সম্পর্কে অন্যান্য পাঠকদের অভিজ্ঞতা ও রেটিং জানুন
+            {language === "bn"
+              ? "বইটি সম্পর্কে অন্যান্য পাঠকদের অভিজ্ঞতা ও রেটিং জানুন"
+              : "Explore ratings and thoughts from other readers"}
           </p>
         </div>
 
@@ -158,21 +240,23 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
               ))}
             </div>
             <div className="text-sm font-bold text-foreground">
-              {averageRating} / ৫.০
+              {averageRating} / 5.0
             </div>
           </div>
         )}
       </div>
 
-      {/* Review Submission Box */}
+      {/* Review Submission Area */}
       {!currentUser ? (
         <div className="p-6 rounded-2xl bg-muted/40 border text-center space-y-3">
           <p className="text-sm font-medium text-foreground">
-            আপনার মূল্যবান মতামত ও রেটিং দিতে অনুগ্রহ করে লগইন করুন।
+            {language === "bn"
+              ? "আপনার মূল্যবান মতামত ও রেটিং দিতে অনুগ্রহ করে লগইন করুন।"
+              : "Please login to submit your review and rating."}
           </p>
           <Button size="sm" asChild>
             <Link href={`/login?callbackUrl=/books/${bookId}`}>
-              লগইন করুন (Login to Review)
+              {language === "bn" ? "লগইন করুন" : "Login to Review"}
             </Link>
           </Button>
         </div>
@@ -181,7 +265,7 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
         <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-              ✓ আপনার দেওয়া রিভিউ:
+              {language === "bn" ? "✓ আপনার দেওয়া রিভিউ:" : "✓ Your Review:"}
             </span>
             <Button
               variant="outline"
@@ -194,7 +278,7 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
               className="text-xs gap-1.5 h-8 border-emerald-500/30"
             >
               <Edit3 className="h-3.5 w-3.5" />
-              <span>রিভিউ এডিট করুন (Edit)</span>
+              <span>{language === "bn" ? "রিভিউ পরিবর্তন করুন" : "Edit Review"}</span>
             </Button>
           </div>
 
@@ -208,11 +292,11 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
               />
             ))}
             <span className="text-xs font-bold text-foreground ml-2">
-              {userReview.rating} স্টার
+              {userReview.rating} {language === "bn" ? "স্টার" : "Stars"}
             </span>
             {userReview.isEdited && (
               <Badge variant="secondary" className="text-[10px] ml-2 text-muted-foreground font-normal">
-                (সম্পাদিত / edited)
+                {language === "bn" ? "সম্পাদিত" : "Edited"}
               </Badge>
             )}
           </div>
@@ -220,16 +304,49 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
             &ldquo;{userReview.comment}&rdquo;
           </p>
         </div>
+      ) : checkingBorrow ? (
+        <div className="p-4 rounded-xl bg-muted/30 border flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <span>
+            {language === "bn"
+              ? "ধার নেওয়ার তথ্য যাচাই করা হচ্ছে..."
+              : "Verifying borrow history..."}
+          </span>
+        </div>
+      ) : !hasBorrowed ? (
+        /* Must borrow before reviewing notice */
+        <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center space-y-2.5">
+          <div className="h-10 w-10 mx-auto rounded-full bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+            <BookOpenCheck className="h-5 w-5" />
+          </div>
+          <h4 className="text-sm font-semibold text-foreground">
+            {language === "bn"
+              ? "রিভিউ দেওয়ার জন্য বইটি ধার নেওয়া আবশ্যক"
+              : "Must Borrow Book Before Reviewing"}
+          </h4>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            {language === "bn"
+              ? "আপনি এখনো বইটি ধার নেননি। প্রকৃত পাঠকদের নির্ভরযোগ্য অভিজ্ঞতার স্বার্থে, বইটি ধার নেওয়ার পরেই কেবল আপনি এতে রিভিউ ও রেটিং দিতে পারবেন।"
+              : "You have not borrowed this book yet. To ensure authentic feedback, only readers who have borrowed the book can submit a review."}
+          </p>
+        </div>
       ) : (
-        /* Fresh review submission form */
+        /* Fresh review submission form for users who have borrowed */
         <form onSubmit={handleAddReview} className="p-6 rounded-2xl bg-card border shadow-xs space-y-4">
-          <h4 className="text-sm font-bold text-foreground">
-            বইটি সম্পর্কে আপনার রিভিউ লিখুন:
+          <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Check className="h-4 w-4 text-emerald-500" />
+            <span>
+              {language === "bn"
+                ? "বইটি সম্পর্কে আপনার রিভিউ লিখুন:"
+                : "Write your review for this book:"}
+            </span>
           </h4>
 
           {/* Interactive Star Selection */}
           <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground font-medium">রেটিং নির্বাচন করুন:</span>
+            <span className="text-xs text-muted-foreground font-medium">
+              {language === "bn" ? "রেটিং নির্বাচন করুন:" : "Select Rating:"}
+            </span>
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map((s) => (
                 <button
@@ -247,12 +364,16 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
               ))}
             </div>
             <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
-              ({rating} স্টার)
+              ({rating} {language === "bn" ? "স্টার" : "Stars"})
             </span>
           </div>
 
           <Textarea
-            placeholder="বইটি পড়ে আপনার কেমন লাগল? লেখার মান ও বিষয়বস্তু সম্পর্কে অন্যদের জানান..."
+            placeholder={
+              language === "bn"
+                ? "বইটি পড়ে আপনার কেমন লাগল? লেখার মান ও বিষয়বস্তু সম্পর্কে অন্যদের জানান..."
+                : "Share your reading experience, thoughts on the story, and recommendations..."
+            }
             rows={3}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
@@ -264,12 +385,12 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                জমা হচ্ছে...
+                {language === "bn" ? "জমা হচ্ছে..." : "Submitting..."}
               </>
             ) : (
               <>
                 <Check className="h-4 w-4" />
-                রিভিউ প্রকাশ করুন
+                {language === "bn" ? "রিভিউ প্রকাশ করুন" : "Submit Review"}
               </>
             )}
           </Button>
@@ -282,12 +403,14 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
           <div className="bg-card border w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
             <h4 className="text-lg font-bold text-foreground flex items-center gap-2">
               <Edit3 className="h-5 w-5 text-primary" />
-              <span>রিভিউ এডিট করুন</span>
+              <span>{language === "bn" ? "রিভিউ পরিবর্তন করুন" : "Edit Review"}</span>
             </h4>
 
             <form onSubmit={handleUpdateReview} className="space-y-4">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">রেটিং:</span>
+                <span className="text-xs text-muted-foreground">
+                  {language === "bn" ? "রেটিং:" : "Rating:"}
+                </span>
                 <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <button
@@ -322,10 +445,16 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
                   onClick={() => setEditingReview(null)}
                   disabled={updating}
                 >
-                  বাতিল
+                  {language === "bn" ? "বাতিল" : "Cancel"}
                 </Button>
                 <Button type="submit" size="sm" disabled={updating}>
-                  {updating ? "আপডেট হচ্ছে..." : "সংরক্ষণ করুন"}
+                  {updating
+                    ? language === "bn"
+                      ? "আপডেট হচ্ছে..."
+                      : "Updating..."
+                    : language === "bn"
+                    ? "সংরক্ষণ করুন"
+                    : "Save Changes"}
                 </Button>
               </div>
             </form>
@@ -338,7 +467,9 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
         {loading ? (
           <div className="text-center py-6 text-sm text-muted-foreground flex items-center justify-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span>রিভিউ লোড হচ্ছে...</span>
+            <span>
+              {language === "bn" ? "রিভিউ লোড হচ্ছে..." : "Loading reviews..."}
+            </span>
           </div>
         ) : reviews.length > 0 ? (
           reviews.map((rev) => (
@@ -356,11 +487,14 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
                       {rev.userName}
                     </h5>
                     <p className="text-[11px] text-muted-foreground">
-                      {new Date(rev.createdAt).toLocaleDateString("bn-BD", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
+                      {new Date(rev.createdAt).toLocaleDateString(
+                        language === "bn" ? "bn-BD" : "en-US",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
+                      )}
                     </p>
                   </div>
                 </div>
@@ -378,7 +512,7 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
                   </div>
                   {rev.isEdited && (
                     <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
-                      (সম্পাদিত / edited)
+                      {language === "bn" ? "সম্পাদিত" : "Edited"}
                     </span>
                   )}
                 </div>
@@ -391,7 +525,9 @@ export default function ReviewSection({ bookId, currentUser }: ReviewSectionProp
           ))
         ) : (
           <p className="text-sm text-muted-foreground text-center py-6 italic">
-            এখনো কোনো রিভিউ দেওয়া হয়নি। প্রথম রিভিউটি আপনিই লিখুন!
+            {language === "bn"
+              ? "এখনো কোনো রিভিউ দেওয়া হয়নি। প্রথম রিভিউটি আপনিই লিখুন!"
+              : "No reviews yet. Be the first to share your review!"}
           </p>
         )}
       </div>

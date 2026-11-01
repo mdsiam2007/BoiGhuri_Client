@@ -1,4 +1,4 @@
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000';
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('boighuri_jwt_token') : null;
@@ -52,3 +52,4 @@ export function clearJwtToken() {
     localStorage.removeItem('boighuri_jwt_token');
   }
 }
+

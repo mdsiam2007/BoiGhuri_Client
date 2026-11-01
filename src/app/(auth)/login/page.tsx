@@ -1,33 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BookOpen, Mail, Lock, Loader2, ArrowRight } from "lucide-react";
+import { Mail, Lock, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { signIn } from "@/lib/auth-client";
 import { syncJwtToken } from "@/lib/api";
+import { useLanguage } from "@/context/LanguageContext";
 import toast from "react-hot-toast";
 
 export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[85vh] flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const { t, language } = useLanguage();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  useEffect(() => {
+    document.title = language === "bn" ? "বইঘুরি | লগইন" : "BoiGhuri | Login";
+  }, [language]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
     if (!email || !password) {
-      setErrorMsg("ইমেইল ও পাসওয়ার্ড উভয়ই আবশ্যক");
-      toast.error("ইমেইল ও পাসওয়ার্ড প্রদান করুন");
+      const msg = language === "bn" ? "ইমেইল ও পাসওয়ার্ড উভয়ই আবশ্যক" : "Both email and password are required";
+      setErrorMsg(msg);
+      toast.error(msg);
       return;
     }
 
@@ -40,7 +61,7 @@ export default function LoginPage() {
       });
 
       if (res?.error) {
-        const msg = res.error.message || "লগইন ব্যর্থ হয়েছে! ইমেইল বা পাসওয়ার্ড ভুল।";
+        const msg = res.error.message || t.loginFailed;
         setErrorMsg(msg);
         toast.error(msg);
       } else {
@@ -50,12 +71,12 @@ export default function LoginPage() {
           name: email.split("@")[0],
         });
 
-        toast.success("সফলভাবে লগইন হয়েছে!");
+        toast.success(t.loginSuccess);
         router.push(callbackUrl);
         router.refresh();
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "লগইন করতে সমস্যা হয়েছে";
+      const msg = err instanceof Error ? err.message : t.loginFailed;
       setErrorMsg(msg);
       toast.error(msg);
     } finally {
@@ -70,7 +91,11 @@ export default function LoginPage() {
         callbackURL: callbackUrl,
       });
     } catch {
-      toast.error(`${provider} লগইন চালু করতে সমস্যা হয়েছে`);
+      toast.error(
+        language === "bn"
+          ? `${provider} লগইন চালু করতে সমস্যা হয়েছে`
+          : `Failed to initiate ${provider} login`
+      );
     }
   };
 
@@ -80,25 +105,28 @@ export default function LoginPage() {
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <Link href="/" className="inline-flex items-center gap-2 group">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md transition-transform group-hover:scale-105">
-              <BookOpen className="h-6 w-6" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/assets/BoiGhuri_horizontal_logo.png"
+              alt="BoiGhuri Logo"
+              className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+            />
           </Link>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            বইঘুরিতে স্বাগতম
+            {t.loginTitle}
           </h1>
           <p className="text-sm text-muted-foreground">
-            আপনার অ্যাকাউন্টে লগইন করে বই পড়া শুরু করুন
+            {t.loginSubtitle}
           </p>
         </div>
 
         <Card className="border border-border/80 shadow-lg">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-xl font-bold text-center">
-              লগইন করুন (Login)
+              {t.loginCardTitle}
             </CardTitle>
             <CardDescription className="text-center text-xs">
-              ইমেইল ও পাসওয়ার্ড দিয়ে প্রবেশ করুন
+              {t.loginCardDesc}
             </CardDescription>
           </CardHeader>
 
@@ -112,13 +140,13 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">
-                  ইমেইল অ্যাড্রেস
+                  {t.emailLabel}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="email"
-                    placeholder="name@example.com"
+                    placeholder={t.emailPlaceholder}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-9"
@@ -129,13 +157,13 @@ export default function LoginPage() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">
-                  পাসওয়ার্ড
+                  {t.passwordLabel}
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="password"
-                    placeholder="••••••••"
+                    placeholder={t.passwordPlaceholder}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-9"
@@ -152,11 +180,11 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    লগইন হচ্ছে...
+                    {t.loggingIn}
                   </>
                 ) : (
                   <>
-                    লগইন করুন
+                    {t.loginBtn}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
@@ -169,7 +197,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground">
-                  অথবা সোশ্যাল লগইন
+                  {t.orSocial}
                 </span>
               </div>
             </div>
@@ -217,12 +245,12 @@ export default function LoginPage() {
             </div>
 
             <div className="text-center text-xs text-muted-foreground pt-2">
-              এখনো অ্যাকাউন্ট নেই?{" "}
+              {t.noAccount}{" "}
               <Link
                 href="/register"
                 className="font-semibold text-primary hover:underline"
               >
-                এখানে রেজিস্টার করুন (Register)
+                {t.registerHere}
               </Link>
             </div>
           </CardContent>

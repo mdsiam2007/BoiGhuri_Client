@@ -5,6 +5,7 @@ import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 import ToastProvider from "@/components/providers/ToastProvider";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 
 const hindSiliguri = Hind_Siliguri({
   weight: ["300", "400", "500", "600", "700"],
@@ -27,13 +28,37 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn" suppressHydrationWarning>
-      <body className={`${hindSiliguri.className} antialiased min-h-screen flex flex-col`}>
-        <ThemeProvider>
-          <ToastProvider />
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </ThemeProvider>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var saved = localStorage.getItem('boighuri-theme');
+                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  if (saved === 'dark' || (!saved && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body
+        suppressHydrationWarning
+        className={`${hindSiliguri.className} antialiased min-h-screen flex flex-col`}
+      >
+        <LanguageProvider>
+          <ThemeProvider>
+            <ToastProvider />
+            <Navbar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

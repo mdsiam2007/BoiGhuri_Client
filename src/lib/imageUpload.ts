@@ -59,3 +59,4 @@ export async function uploadImageToCloud(file: File): Promise<string> {
   // 3. Fallback: If APIs cannot be reached directly due to network sandbox, create an object URL or throw informative error
   throw new Error("ইমেজ আপলোড সার্ভিসের সাথে সংযোগ করা যায়নি। অনুগ্রহ করে ছবির সরাসরি ইউআরএল (URL) ব্যবহার করুন।");
 }
+

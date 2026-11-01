@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
-import { BookOpen, Upload, Link as LinkIcon, Loader2, PlusCircle, CheckCircle, Image as ImageIcon } from "lucide-react";
+import { Upload, Link as LinkIcon, Loader2, PlusCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -323,3 +323,4 @@ function AddBookForm() {
     </div>
   );
 }
+

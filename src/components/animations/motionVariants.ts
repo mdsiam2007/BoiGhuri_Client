@@ -35,3 +35,4 @@ export const slideInFromLeft = {
     transition: { duration: 0.6, ease: "easeOut" },
   },
 };
+

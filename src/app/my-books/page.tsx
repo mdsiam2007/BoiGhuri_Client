@@ -22,7 +22,7 @@ import { IBook } from "@/types";
 import { fetchWithAuth } from "@/lib/api";
 import toast from "react-hot-toast";
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL;
 
 export default function MyBooksPage() {
   return (
@@ -212,7 +212,7 @@ function MyBooksContent() {
                             variant="destructive"
                             size="icon"
                             onClick={() => setDeletingBook(book)}
-                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                            className="h-8 w-8 "
                             title="মুছে ফেলুন"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -281,3 +281,4 @@ function MyBooksContent() {
     </div>
   );
 }
+
