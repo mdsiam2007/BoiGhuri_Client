@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Star, MessageSquare, Edit3, Check, Loader2, User as UserIcon, BookOpenCheck, AlertCircle } from "lucide-react";
+import { Star, MessageSquare, Edit3, Check, Loader2, User as UserIcon, BookOpenCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
