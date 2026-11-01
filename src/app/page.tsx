@@ -1,6 +1,7 @@
 import HeroSlider from "@/components/home/HeroSlider";
 import NewArrivals from "@/components/home/NewArrivals";
 import HowItWorks from "@/components/home/HowItWorks";
+import PromoVideoSection from "@/components/home/PromoVideoSection";
 import TopCategories from "@/components/home/TopCategories";
 
 export const metadata = {
@@ -11,11 +12,14 @@ export const metadata = {
 export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen">
-      {/* 5-Slide Hero Slider */}
+      {/* 6-Slide Hero Slider with Local Assets */}
       <HeroSlider />
 
-      {/* Dynamic New Arrivals Section */}
+      {/* Dynamic New Arrivals Section (10 Books / 5 per row) */}
       <NewArrivals />
+
+      {/* 10-Second Promo Video Showcase Section */}
+      <PromoVideoSection />
 
       {/* Extra Section 1: How Borrowing Works */}
       <HowItWorks />
