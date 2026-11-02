@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, X, LogOut, PlusCircle, BookMarked, Library, UserCheck } from "lucide-react";
@@ -17,7 +17,7 @@ import LanguageToggle from "@/components/shared/LanguageToggle";
 import ProfileEditModal from "@/components/shared/ProfileEditModal";
 import { useSession, signOut } from "@/lib/auth-client";
 import { useLanguage } from "@/context/LanguageContext";
-import { clearJwtToken } from "@/lib/api";
+import { clearJwtToken, syncJwtToken } from "@/lib/api";
 import toast from "react-hot-toast";
 
 export default function Navbar() {
@@ -29,6 +29,23 @@ export default function Navbar() {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   const user = session?.user;
+
+  // Proactively ensure backend JWT token exists whenever session is active (e.g. on reload, social login)
+  useEffect(() => {
+    if (!isPending && user?.email) {
+      const existingToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("boighuri_jwt_token")
+          : null;
+      if (!existingToken) {
+        syncJwtToken({
+          email: user.email,
+          name: user.name || "User",
+          image: user.image || "",
+        });
+      }
+    }
+  }, [user, isPending]);
 
   const handleLogout = async () => {
     try {
@@ -67,7 +84,7 @@ export default function Navbar() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/BoiGhuri_horizontal_logo.png"
-            alt="বইঘুরি BoiGhuri Logo"
+            alt="ন ইঘুরি BoiGhuri Logo"
             className="h-10 sm:h-11 w-auto object-contain transition-transform group-hover:scale-105"
           />
         </Link>
@@ -235,12 +252,14 @@ export default function Navbar() {
           isOpen={profileModalOpen}
           onClose={() => setProfileModalOpen(false)}
           currentUser={user}
-          onSuccess={(newName) => {
-            if (user) user.name = newName;
+          onSuccess={(newName, newImage) => {
+            if (user) {
+              user.name = newName;
+              if (newImage) user.image = newImage;
+            }
           }}
         />
       )}
     </header>
   );
 }
-

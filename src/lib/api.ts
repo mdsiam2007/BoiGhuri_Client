@@ -31,7 +31,7 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
   return data;
 }
 
-export async function syncJwtToken(user: { email: string; name: string; image?: string }) {
+export async function syncJwtToken(user: { email: string; name?: string; image?: string }) {
   try {
     const res = await fetch(`${SERVER_URL}/auth/jwt`, {
       method: 'POST',

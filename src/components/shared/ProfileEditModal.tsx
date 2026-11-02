@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Mail, Image as ImageIcon, Loader2, Save, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { fetchWithAuth } from "@/lib/api";
+import { fetchWithAuth, syncJwtToken } from "@/lib/api";
+import { updateUser } from "@/lib/auth-client";
 import { useLanguage } from "@/context/LanguageContext";
 import toast from "react-hot-toast";
 
@@ -38,6 +39,13 @@ export default function ProfileEditModal({
   const [image, setImage] = useState(currentUser.image || "");
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (isOpen) {
+      setName(currentUser.name || "");
+      setImage(currentUser.image || "");
+    }
+  }, [isOpen, currentUser.name, currentUser.image]);
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -54,11 +62,38 @@ export default function ProfileEditModal({
     );
 
     try {
+      const trimmedName = name.trim();
+      const trimmedImage = image.trim();
+
+      // 1. Proactively ensure JWT token exists in localStorage
+      let token = typeof window !== "undefined" ? localStorage.getItem("boighuri_jwt_token") : null;
+      if (!token && currentUser.email) {
+        const syncRes = await syncJwtToken({
+          email: currentUser.email,
+          name: trimmedName,
+          image: trimmedImage || currentUser.image || "",
+        });
+        if (syncRes?.token) {
+          token = syncRes.token;
+        }
+      }
+
+      // 2. Update Better-Auth session and database user document
+      try {
+        await updateUser({
+          name: trimmedName,
+          image: trimmedImage || undefined,
+        });
+      } catch (authErr) {
+        console.warn("Better-auth updateUser warning:", authErr);
+      }
+
+      // 3. Update backend database (books, reviews, borrows, and user doc) and retrieve fresh JWT
       const res = await fetchWithAuth("/auth/profile", {
         method: "PATCH",
         body: JSON.stringify({
-          name: name.trim(),
-          image: image.trim(),
+          name: trimmedName,
+          image: trimmedImage,
         }),
       });
 
@@ -69,17 +104,21 @@ export default function ProfileEditModal({
         toast.success(
           res.message ||
             (language === "bn"
-              ? "নাম সফলভাবে পরিবর্তন করা হয়েছে!"
+              ? "প্রোফাইল সফলভাবে পরিবর্তন করা হয়েছে!"
               : "Profile updated successfully!"),
           { id: toastId }
         );
-        onSuccess(name.trim(), image.trim());
+        onSuccess(trimmedName, trimmedImage);
         onClose();
-        window.location.reload();
+
+        // Refresh to allow full session and navigation states to re-render
+        setTimeout(() => {
+          window.location.reload();
+        }, 300);
       } else {
         toast.error(
           res.message ||
-            (language === "bn" ? "নাম পরিবর্তন করা যায়নি" : "Failed to update name"),
+            (language === "bn" ? "প্রোফাইল পরিবর্তন করা যায়নি" : "Failed to update profile"),
           { id: toastId }
         );
       }
